@@ -54,6 +54,15 @@ var log = require('../../../../lib/fakelog');
       });
     });
 
+    describe('.isEnabled', () => {
+      it('should set the .isEnabled to the MediaStreamTrack\'s .enabled property', () => {
+        track = createTrack(LocalTrack, '1', kind[description]);
+        assert.equal(track.isEnabled, track.mediaStreamTrack.enabled);
+        track.mediaStreamTrack.enabled = !track.mediaStreamTrack.enabled;
+        assert.equal(track.isEnabled, track.mediaStreamTrack.enabled);
+      });
+    });
+
     describe('.isStopped', () => {
       it('should set .isStopped based on the state of the MediaStreamTrack\'s .readyState property', () => {
         track = createTrack(LocalTrack, '1', kind[description]);
