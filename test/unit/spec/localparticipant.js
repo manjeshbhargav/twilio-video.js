@@ -7,6 +7,7 @@ var inherits = require('util').inherits;
 var LocalParticipant = require('../../../lib/localparticipant');
 var sinon = require('sinon');
 var log = require('../../lib/fakelog');
+var { capitalize } = require('../../lib/util');
 
 const LocalAudioTrack = sinon.spy(function(mediaStreamTrack) {
   EventEmitter.call(this);
@@ -280,6 +281,43 @@ describe('LocalParticipant', () => {
           var track = { id: 'foo' };
           test.participant.emit('trackAdded', track);
           assert(!test.signaling.addTrack.calledOnce);
+        });
+      });
+    });
+
+    [ 'disable', 'enable' ].forEach(trackMethod => {
+      context(`"track${capitalize(trackMethod)}d" event`, () => {
+        [ 'connecting', 'connected' ].forEach(state => {
+          context(`when the LocalParticipant .state is "${state}"`, () => {
+            it(`should call .${trackMethod} on the LocalTrack\'s PublishedTrackSignaling`, () => {
+              var test = makeTest({ state });
+              var track = { id: 'foo' };
+              var trackSignaling = { id: 'foo' };
+              trackSignaling[trackMethod] = sinon.spy();
+              test.signaling._getPublishedTrack = () => trackSignaling;
+              test.participant.emit(`track${capitalize(trackMethod)}d`, track);
+              sinon.assert.calledOnce(trackSignaling[trackMethod]);
+            });
+          });
+        });
+
+        [ 'is', 'transitions to' ].forEach(action => {
+          context(`when the LocalParticipant .state ${action} "disconnected"`, () => {
+            it(`should not call .${trackMethod} on the LocalTrack\'s PublishedTrackSignaling`, () => {
+              var test = makeTest({ state: action === 'is' ? 'disconnected' : 'connected' });
+              var track = { id: 'foo' };
+              var trackSignaling = { id: 'foo' };
+
+              trackSignaling[trackMethod] = sinon.spy();
+              test.signaling._getPublishedTrack = () => trackSignaling;
+              if (action === 'transitions to') {
+                test.signaling.emit('stateChanged', 'disconnected');
+              }
+
+              test.participant.emit(`track${capitalize(trackMethod)}d`, track);
+              assert(!trackSignaling[trackMethod].calledOnce);
+            });
+          });
         });
       });
     });
